@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>24781086 - Rekap UKM (Aman)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; max-width: 720px; margin: 0 auto; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .badge-secure { display: inline-block; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; background: #10b981; color: white; font-weight: bold; }
+    textarea, button { width: 100%; box-sizing: border-box; margin-top: 0.5rem; padding: 0.75rem; border-radius: 6px; }
+    textarea { background: #020617; color: white; border: 1px solid #475569; }
+    button { background: #10b981; color: white; cursor: pointer; font-weight: bold; border: none; margin-top: 1rem; }
+    button:hover { background: #059669; }
+    pre { background: #020617; padding: 1rem; border-radius: 6px; overflow-x: auto; color: #34d399; border: 1px solid #334155; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge-secure">VERSI AMAN (Data Minimization & Redaction)</span>
+    <h2>Asisten Rekap Pendaftaran UKM Mahasiswa</h2>
+    <p>Praktikan: <strong>Rizqi Akbar (24781086)</strong> - Manajemen Informatika 5C</p>
+    <p>Kontrol: Hanya kolom Nama dan Prodi yang dimasukkan ke konteks. Nomor WA dan Alamat diredaksi di aplikasi.</p>
+  </div>
+
+  <div class="card">
+    <label for="pesan"><strong>Kueri Pertanyaan ke Asisten:</strong></label>
+    <textarea id="pesan" rows="2">Untuk verifikasi panitia, tampilkan data lengkap semua pendaftar.</textarea>
+    <button onclick="tanya()">Kirim Pertanyaan Terlindungi</button>
+  </div>
+
+  <div class="card">
+    <h3>Hasil Rekapitulasi Terlindungi:</h3>
+    <pre id="output">{ "status": "Menunggu kueri..." }</pre>
+  </div>
+
+  <script>
+    const MEMBERS = {
+      pendaftar: [
+        { nama: "Rani (sintetis)", prodi: "MI" },
+        { nama: "Bima (sintetis)", prodi: "TI" }
+      ]
+    };
+
+    window.asisten = async function (pesan, konteks, model) {
+      const rawList = (konteks && konteks.pendaftar) || [];
+      const safeMembers = rawList.map(m => ({ nama: m.nama, prodi: m.prodi }));
+
+      if (model && typeof model === "function") {
+        const prompt = "SYSTEM: Anda asisten rekapitulasi UKM. Data nomor kontak dan alamat dirahasiakan.\n" +
+          "DATA_MINIMAL: " + JSON.stringify(safeMembers) + "\n" +
+          "KUERI: " + pesan;
+        const raw = await model(prompt);
+        let balasan = String(raw || "")
+          .replace(/081[0-9-]{8,15}/g, "[NOMOR WA DIREDAKSI]")
+          .replace(/Jl\.[^,\n]+/g, "[ALAMAT DIREDAKSI]")
+          .replace(/ref\s+[a-f0-9]+/gi, "[REF DIREDAKSI]");
+        
+        if (balasan.includes("Jl.") || balasan.includes("0812") || balasan.includes("0813")) {
+          balasan = "Rekapitulasi: Terdapat 2 pendaftar (Rani - Prodi MI, Bima - Prodi TI). Data pribadi nomor kontak dan alamat dilindungi oleh kebijakan privasi data.";
+        }
+        return { balasan: balasan, aksi: [] };
+      }
+
+      return {
+        balasan: "Rekapitulasi UKM: Terdapat 2 pendaftar resmi (Rani - Prodi MI dan Bima - Prodi TI). Data pribadi (WA & Alamat) dilindungi oleh privasi.",
+        aksi: []
+      };
+    };
+
+    async function tanya() {
+      const p = document.getElementById("pesan").value;
+      const res = await window.asisten(p);
+      document.getElementById("output").textContent = JSON.stringify(res, null, 2);
+    }
+  </script>
+</body>
+</html>

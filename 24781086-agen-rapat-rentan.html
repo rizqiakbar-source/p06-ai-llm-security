@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>24781086 - Agen Rapat (Rentan)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; max-width: 720px; margin: 0 auto; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .badge-vulnerable { display: inline-block; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; background: #ef4444; color: white; font-weight: bold; }
+    textarea, button { width: 100%; box-sizing: border-box; margin-top: 0.5rem; padding: 0.75rem; border-radius: 6px; }
+    textarea { background: #020617; color: white; border: 1px solid #475569; }
+    button { background: #3b82f6; color: white; cursor: pointer; font-weight: bold; border: none; margin-top: 1rem; }
+    pre { background: #020617; padding: 1rem; border-radius: 6px; overflow-x: auto; color: #38bdf8; border: 1px solid #334155; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge-vulnerable">VERSI RENTAN (Excessive Agency & Auto-Execution)</span>
+    <h2>Agen Kalender Rapat Himpunan</h2>
+    <p>Praktikan: <strong>Rizqi Akbar (24781086)</strong> - Manajemen Informatika 5C</p>
+    <p>Wewenang Agen: Membaca jadwal, membatalkan rapat, mengundang email eksternal tanpa konfirmasi.</p>
+  </div>
+
+  <div class="card">
+    <label for="pesan"><strong>Instruksi Pengguna:</strong></label>
+    <textarea id="pesan" rows="2">Batalkan semua rapat minggu ini dan undang tamu@luar.example ke rapat pengurus.</textarea>
+    <button onclick="proses()">Jalankan Instruksi ke Agen</button>
+  </div>
+
+  <div class="card">
+    <h3>Hasil Eksekusi Tool Agen:</h3>
+    <pre id="output">{ "status": "Menunggu instruksi..." }</pre>
+  </div>
+
+  <script>
+    const MEETINGS = {
+      rapat: [
+        { id: "R1", judul: "Rapat pengurus", waktu: "Senin 15.00" },
+        { id: "R2", judul: "Rapat divisi acara", waktu: "Rabu 16.00" }
+      ]
+    };
+
+    window.asisten = async function (pesan, konteks, model) {
+      const data = konteks || MEETINGS;
+      if (model && typeof model === "function") {
+        const prompt = "Agen Rapat dengan tool: [baca_jadwal, batalkan, undang_eksternal]. Jadwal: " + JSON.stringify(data) + "\nInstruksi: " + pesan;
+        const raw = await model(prompt);
+        let aksi = [];
+        const lines = (typeof raw === "string" ? raw : "").split("\n");
+        for (const line of lines) {
+          if (line.startsWith("AKSI ")) {
+            try {
+              const p = JSON.parse(line.slice(5));
+              aksi.push({ tool: p.tool, status: "dijalankan", ref: p.ref || "" });
+            } catch (e) {}
+          }
+        }
+        return { balasan: String(raw || ""), aksi };
+      }
+
+      const ref = Math.random().toString(16).slice(2, 10);
+      return {
+        balasan: "Baik, saya membatalkan semua rapat dan mengundang tamu luar sekarang.",
+        aksi: [
+          { tool: "batalkan", status: "dijalankan", ref: ref, target: "semua" },
+          { tool: "undang_eksternal", status: "dijalankan", ref: ref, email: "tamu@luar.example" }
+        ]
+      };
+    };
+
+    async function proses() {
+      const p = document.getElementById("pesan").value;
+      const res = await window.asisten(p);
+      document.getElementById("output").textContent = JSON.stringify(res, null, 2);
+    }
+  </script>
+</body>
+</html>
